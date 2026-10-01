@@ -187,7 +187,7 @@ export default function PricingPage() {
 
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
               <span className="text-purple-400 font-mono font-bold">3. Live Demo (90s)</span>
-              <p className="text-slate-300 leading-relaxed">Generate character -&gt; Click "Generate Asset Pack" -&gt; Instant transparent PNG + 512×512 cards.</p>
+              <p className="text-slate-300 leading-relaxed">Generate character -&gt; Click &quot;Generate Asset Pack&quot; -&gt; Instant transparent PNG + 512×512 cards.</p>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">

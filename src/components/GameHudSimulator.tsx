@@ -10,7 +10,7 @@ interface GameHudSimulatorProps {
 }
 
 export default function GameHudSimulator({ imageUrl, assetName, assetType }: GameHudSimulatorProps) {
-  const [hudMode, setHudMode] = useState<'rpg_inventory' | 'cyberpunk_hud' | 'dialogue_box'>('cyberpunk_hud');
+  const [hudMode, setHudMode] = useState<'rpg_inventory' | 'cyberpunk_hud' | 'dialogue_box' | 'pubg_br_hud'>('pubg_br_hud');
 
   return (
     <div className="w-full space-y-4">
@@ -21,7 +21,18 @@ export default function GameHudSimulator({ imageUrl, assetName, assetType }: Gam
           <span>In-Game UI Sandbox Simulator</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setHudMode('pubg_br_hud')}
+            className={`px-3 py-1 rounded-lg border transition-all ${
+              hudMode === 'pubg_br_hud'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-extrabold shadow-md'
+                : 'bg-slate-900 text-slate-400 border-slate-800'
+            }`}
+          >
+            🪂 PUBG / Free Fire BR HUD
+          </button>
+
           <button
             onClick={() => setHudMode('cyberpunk_hud')}
             className={`px-3 py-1 rounded-lg border transition-all ${
@@ -60,13 +71,133 @@ export default function GameHudSimulator({ imageUrl, assetName, assetType }: Gam
       {/* CANVAS DISPLAY BOX */}
       <div className="relative w-full h-[380px] rounded-2xl bg-[#090e17] border border-slate-800 flex items-center justify-center p-6 overflow-hidden shadow-2xl">
         
+        {/* MODE 0: PUBG / FREE FIRE BATTLE ROYALE HUD */}
+        {hudMode === 'pubg_br_hud' && (
+          <div className="w-full max-w-2xl bg-slate-950/95 border-2 border-amber-500/60 rounded-2xl p-4 space-y-4 shadow-2xl relative text-xs font-mono">
+            
+            {/* BR Match Status Header */}
+            <div className="flex items-center justify-between border-b border-amber-500/30 pb-2">
+              <div className="flex items-center gap-4">
+                <div className="bg-amber-950 px-3 py-1 rounded-lg border border-amber-500/50 text-amber-400 font-black">
+                  🪂 ALIVE: 42
+                </div>
+                <div className="bg-red-950 px-3 py-1 rounded-lg border border-red-500/50 text-red-400 font-black">
+                  🎯 KILLS: 9
+                </div>
+              </div>
+
+              <div className="text-center font-bold text-slate-300 bg-slate-900 px-3 py-1 rounded-lg border border-slate-800">
+                ZONE SHRINKING IN <span className="text-cyan-400 font-extrabold">00:45</span>
+              </div>
+
+              {/* Minimap Circle */}
+              <div className="w-12 h-12 rounded-full border-2 border-cyan-400 bg-slate-900 flex items-center justify-center relative overflow-hidden shadow-md">
+                <div className="w-6 h-6 rounded-full border border-dashed border-cyan-300 animate-spin" />
+                <div className="w-2 h-2 rounded-full bg-amber-400 absolute" />
+              </div>
+            </div>
+
+            {/* Main Battle Feed & Asset Display */}
+            <div className="grid grid-cols-12 gap-4 items-center">
+              
+              {/* Asset Equipped Card */}
+              <div className="col-span-5 bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-center gap-3">
+                <div className="w-14 h-14 rounded-xl bg-amber-950/50 border border-amber-500/50 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={imageUrl}
+                    alt={assetName}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (!target.src.includes('/api/image-proxy') && imageUrl.startsWith('http')) {
+                        target.src = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+                      } else {
+                        target.src = '/assets/renders/cyberwarrior.jpg';
+                      }
+                    }}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-white text-xs truncate">{assetName}</h4>
+                  <span className="text-[10px] text-amber-400 font-bold block">LEVEL 3 HELMET & VEST</span>
+                  <span className="text-[9px] text-slate-400">PUBG/Free Fire Skin Active</span>
+                </div>
+              </div>
+
+              {/* Live Kill Feed */}
+              <div className="col-span-7 bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-1 text-[10px]">
+                <div className="text-slate-400 font-bold text-[9px] border-b border-slate-800 pb-1 flex justify-between">
+                  <span>LIVE BATTLE FEED</span>
+                  <span className="text-amber-400">ERANGEL / MAP 01</span>
+                </div>
+                <div className="text-red-400 flex justify-between">
+                  <span>💥 [AWM] Player13 → ShadowSniper</span>
+                  <span>240m</span>
+                </div>
+                <div className="text-emerald-400 flex justify-between font-bold">
+                  <span>🎯 [AWM] {assetName} → CyberBot_09</span>
+                  <span>Headshot!</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Bottom Bar: Health, Ammo & Equipment */}
+            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+              
+              {/* Health & Durability */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-bold text-slate-300">
+                  <span>❤️ HEALTH: 100/100</span>
+                  <span className="text-emerald-400">MEDKIT x2</span>
+                </div>
+                <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+                  <div className="bg-emerald-500 h-full w-full" />
+                </div>
+                <div className="flex gap-2 text-[10px] text-slate-400">
+                  <span className="text-cyan-400">🛡️ L3 Vest: 92%</span>
+                  <span className="text-amber-400">🪖 L3 Helmet: 88%</span>
+                </div>
+              </div>
+
+              {/* Weapon Ammo Slots */}
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-2 flex items-center justify-between text-[11px]">
+                <div>
+                  <div className="font-extrabold text-amber-400">SLOT 1: AWM SNIPER</div>
+                  <div className="text-[10px] text-slate-400">8x Scope • Suppressor</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-base font-black text-white">5 / 45</div>
+                  <div className="text-[9px] text-cyan-400 font-bold">.300 MAGNUM</div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        )}
+        
         {/* MODE 1: CYBERPUNK ACTION HUD */}
         {hudMode === 'cyberpunk_hud' && (
           <div className="w-full max-w-xl bg-slate-950/90 border-2 border-cyan-500/50 rounded-2xl p-5 space-y-4 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-cyan-500/30 pb-3">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-xl bg-cyan-950 border border-cyan-500/60 p-1 flex items-center justify-center overflow-hidden">
-                  <img src={imageUrl} alt={assetName} referrerPolicy="no-referrer" className="w-full h-full object-contain" />
+                  <img
+                    src={imageUrl}
+                    alt={assetName}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (!target.src.includes('/api/image-proxy') && imageUrl.startsWith('http')) {
+                        target.src = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+                      } else {
+                        target.src = '/assets/renders/cyberwarrior.jpg';
+                      }
+                    }}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div>
                   <h4 className="text-sm font-extrabold text-white">{assetName}</h4>
@@ -117,12 +248,25 @@ export default function GameHudSimulator({ imageUrl, assetName, assetType }: Gam
 
             <div className="grid grid-cols-3 gap-4 items-center">
               <div className="col-span-1 aspect-square rounded-2xl bg-purple-950/40 border-2 border-purple-400 p-2 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                <img src={imageUrl} alt={assetName} className="w-full h-full object-contain" />
+                <img
+                  src={imageUrl}
+                  alt={assetName}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.src.includes('/api/image-proxy') && imageUrl.startsWith('http')) {
+                      target.src = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+                    } else {
+                      target.src = '/assets/renders/cyberwarrior.jpg';
+                    }
+                  }}
+                  className="w-full h-full object-contain"
+                />
               </div>
 
               <div className="col-span-2 space-y-2 text-xs">
                 <h4 className="font-extrabold text-white text-sm">{assetName}</h4>
-                <p className="text-[11px] text-slate-300 italic">"Cloudinary AI processed item asset ready for equipment."</p>
+                <p className="text-[11px] text-slate-300 italic">&quot;Cloudinary AI processed item asset ready for equipment.&quot;</p>
 
                 <div className="space-y-1 pt-1 font-mono text-[11px] text-purple-300">
                   <p>⚔️ ATK Power: +450</p>
@@ -139,7 +283,20 @@ export default function GameHudSimulator({ imageUrl, assetName, assetType }: Gam
           <div className="w-full max-w-xl bg-slate-950/95 border-2 border-pink-500/50 rounded-2xl p-5 space-y-4 shadow-2xl">
             <div className="flex gap-4 items-center">
               <div className="w-20 h-20 rounded-2xl bg-pink-950 border-2 border-pink-400 p-1 flex-shrink-0 flex items-center justify-center overflow-hidden shadow-lg shadow-pink-500/20">
-                <img src={imageUrl} alt={assetName} className="w-full h-full object-contain" />
+                <img
+                  src={imageUrl}
+                  alt={assetName}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.src.includes('/api/image-proxy') && imageUrl.startsWith('http')) {
+                      target.src = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+                    } else {
+                      target.src = '/assets/renders/cyberwarrior.jpg';
+                    }
+                  }}
+                  className="w-full h-full object-contain"
+                />
               </div>
 
               <div className="space-y-2">
@@ -150,7 +307,7 @@ export default function GameHudSimulator({ imageUrl, assetName, assetType }: Gam
                   </span>
                 </div>
                 <p className="text-xs text-slate-200 leading-relaxed italic bg-slate-900 p-3 rounded-xl border border-slate-800">
-                  "Welcome, adventurer! This visual asset was dynamically background-removed and smart-cropped by Cloudinary's AI pipeline in under 200ms."
+                  &quot;Welcome, adventurer! This visual asset was dynamically background-removed and smart-cropped by Cloudinary&apos;s AI pipeline in under 200ms.&quot;
                 </p>
               </div>
             </div>

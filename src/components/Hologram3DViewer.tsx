@@ -86,6 +86,14 @@ export default function Hologram3DViewer({ imageUrl, assetName }: Hologram3DView
             src={imageUrl}
             alt={assetName}
             referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.src.includes('/api/image-proxy') && imageUrl.startsWith('http')) {
+                target.src = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+              } else {
+                target.src = '/assets/renders/cyberwarrior.jpg';
+              }
+            }}
             className="w-full h-full object-contain rounded-xl opacity-30 filter blur-md"
             style={{ transform: `translateZ(-${depthIntensity}px) scale(0.95)` }}
           />
@@ -95,6 +103,14 @@ export default function Hologram3DViewer({ imageUrl, assetName }: Hologram3DView
             src={imageUrl}
             alt={assetName}
             referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.src.includes('/api/image-proxy') && imageUrl.startsWith('http')) {
+                target.src = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+              } else {
+                target.src = '/assets/renders/cyberwarrior.jpg';
+              }
+            }}
             className={`w-full h-full object-contain rounded-xl drop-shadow-2xl ${
               wireframe ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-950' : ''
             }`}

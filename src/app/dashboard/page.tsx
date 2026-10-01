@@ -5,9 +5,53 @@ import Link from 'next/link';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SafeImage from '@/components/SafeImage';
 import { GameAsset, Project } from '@/types/gameforge';
 import { getStoredProjects, getStoredAssets, saveProjects } from '@/lib/store';
 import { LayoutDashboard, Wand2, Layers, FolderKanban, Plus, ExternalLink, Sparkles, Image as ImageIcon, ShieldCheck, Zap, ArrowUpRight, Search, Tag, Settings, CloudUpload, Heart } from 'lucide-react';
+
+function SafeAssetThumbnail({ asset }: { asset: GameAsset }) {
+  const category = (
+    asset.assetType.toLowerCase() === 'character' ? 'character' :
+    asset.assetType.toLowerCase().includes('weapon') ? 'weapon' :
+    asset.assetType.toLowerCase() === 'environment' ? 'environment' :
+    asset.assetType.toLowerCase() === 'vehicle' ? 'vehicle' :
+    asset.assetType.toLowerCase().includes('prop') || asset.assetType.toLowerCase().includes('item') ? 'prop' :
+    'default'
+  ) as 'character' | 'weapon' | 'environment' | 'vehicle' | 'prop' | 'default';
+
+  const imageSrc = asset.thumbnailUrl || asset.originalUrl;
+  const fallbacks = [asset.originalUrl, asset.thumbnailUrl].filter(Boolean) as string[];
+
+  return (
+    <div className="relative aspect-square bg-slate-950 overflow-hidden flex items-center justify-center">
+      <SafeImage
+        src={imageSrc}
+        fallbackSrcs={fallbacks}
+        category={category}
+        alt={asset.name}
+        containerClassName="w-full h-full"
+        className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
+      />
+
+      {/* Cloudinary Tags Overlay */}
+      <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-20">
+        <span className="px-2 py-0.5 rounded bg-slate-900/90 text-cyan-400 border border-cyan-500/40 text-[10px] font-bold">
+          {asset.assetType}
+        </span>
+        {asset.isPack && (
+          <span className="px-2 py-0.5 rounded bg-purple-900/90 text-purple-300 border border-purple-500/40 text-[10px] font-bold">
+            Pack
+          </span>
+        )}
+      </div>
+
+      <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded bg-slate-950/90 text-[10px] font-mono text-slate-300 border border-slate-800 z-20">
+        {asset.cloudinaryUploaded ? 'Cloudinary f_auto' : 'Cloudinary Media'}
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -23,6 +67,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const projs = getStoredProjects();
     const asts = getStoredAssets();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProjects(projs);
     setAssets(asts);
     if (projs.length > 0) {
@@ -38,7 +83,7 @@ export default function DashboardPage() {
   const userGeneratedAssets = assets.filter(a => a.provider && a.provider !== undefined);
   const cloudinaryAssets = assets.filter(a => a.cloudinaryUploaded);
   const favoriteAssets = assets.filter(a => a.isFavorite);
-  const totalUserAssets = assets.filter(a => !['asset-kungfu-panda','asset-cyber-warrior','asset-dragon-lord','asset-scifi-city','asset-scifi-blaster','asset-health-potion'].includes(a.id));
+  const totalUserAssets = assets.filter(a => !['asset-goku-kamehameha', 'asset-master-chief-spartan', 'asset-kratos-god-of-war', 'asset-awm-dragon-sniper', 'asset-cloud-buster-sword', 'asset-pubg-offroad-buggy', 'asset-ironman-mark85', 'asset-arc-reactor-core', 'asset-mech-titan', 'asset-kungfu-panda','asset-cyber-warrior','asset-dragon-lord','asset-scifi-city','asset-scifi-blaster','asset-health-potion'].includes(a.id));
 
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,7 +207,7 @@ export default function DashboardPage() {
                     <label className="block text-slate-300 font-bold mb-1">Game Engine Target</label>
                     <select
                       value={newProjEngine}
-                      onChange={(e: any) => setNewProjEngine(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewProjEngine(e.target.value as 'Unity' | 'Unreal Engine' | 'Godot' | 'WebGPU/Three.js')}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-cyan-500 text-sm font-medium"
                     >
                       <option value="Unity">Unity 3D / 2D</option>
@@ -398,30 +443,7 @@ export default function DashboardPage() {
                         href={`/asset/${asset.id}`}
                         className="group bg-slate-950/80 rounded-2xl border border-slate-800 hover:border-cyan-500/60 transition-all overflow-hidden glow-card flex flex-col h-full shadow-lg"
                       >
-                        {/* Thumbnail Container */}
-                        <div className="relative aspect-square bg-slate-900 overflow-hidden flex items-center justify-center">
-                          <img
-                            src={asset.thumbnailUrl}
-                            alt={asset.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          
-                          {/* Cloudinary Tags Overlay */}
-                          <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1">
-                            <span className="px-2 py-0.5 rounded bg-slate-900/90 text-cyan-400 border border-cyan-500/40 text-[10px] font-bold">
-                              {asset.assetType}
-                            </span>
-                            {asset.isPack && (
-                              <span className="px-2 py-0.5 rounded bg-purple-900/90 text-purple-300 border border-purple-500/40 text-[10px] font-bold">
-                                Pack
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded bg-slate-950/90 text-[10px] font-mono text-slate-300 border border-slate-800">
-                            Cloudinary f_auto
-                          </div>
-                        </div>
+                        <SafeAssetThumbnail asset={asset} />
 
                         {/* Content */}
                         <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
@@ -430,7 +452,7 @@ export default function DashboardPage() {
                               {asset.name}
                             </h4>
                             <p className="text-xs text-slate-400 line-clamp-2 mt-1 italic">
-                              "{asset.prompt}"
+                              &quot;{asset.prompt}&quot;
                             </p>
                           </div>
 

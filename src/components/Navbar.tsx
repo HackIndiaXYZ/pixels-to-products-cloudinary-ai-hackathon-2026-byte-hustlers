@@ -14,6 +14,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const projs = getStoredProjects();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProjects(projs);
     if (projs.length > 0) {
       setSelectedProjectId(projs[0].id);

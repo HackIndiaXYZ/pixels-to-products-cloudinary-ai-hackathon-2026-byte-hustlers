@@ -10,27 +10,26 @@ import { NextResponse } from 'next/server';
  * Returns: { configured: boolean, cloudName: string | null }
  */
 export async function GET() {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME ?? process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'demo';
-  const hasApiKey    = !!process.env.CLOUDINARY_API_KEY || true;
-  const hasApiSecret = !!process.env.CLOUDINARY_API_SECRET || true;
-
-  const configured = true;
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME ?? process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? null;
+  const hasApiKey = !!process.env.CLOUDINARY_API_KEY;
+  const hasApiSecret = !!process.env.CLOUDINARY_API_SECRET;
+  const configured = !!(cloudName && hasApiKey && hasApiSecret && cloudName !== 'demo');
 
   return NextResponse.json({
-    configured: true,
-    // Expose cloud name (not secret) so UI can build preview URLs
-    cloudName: cloudName,
-    hasApiKey: true,
-    hasApiSecret: true,
-    // What features are available
+    configured,
+    cloudName: cloudName || 'demo',
+    hasApiKey,
+    hasApiSecret,
     features: {
-      upload:           true,
-      backgroundRemoval: true,
-      smartCrop:        true,
-      aiVisionTags:     true,
-      generativeReplace: true,
-      fAutoQAuto:       true,
+      upload: configured,
+      backgroundRemoval: configured,
+      smartCrop: configured,
+      aiVisionTags: configured,
+      generativeReplace: configured,
+      fAutoQAuto: configured,
     },
-    setupInstructions: null
+    setupInstructions: configured
+      ? null
+      : 'Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in .env.local to enable real Cloudinary media pipeline transformations and storage.',
   });
 }

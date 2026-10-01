@@ -170,7 +170,20 @@ export default function SpriteSheetStudio({ imageUrl, assetName }: SpriteSheetSt
                       : 'bg-slate-950 border-slate-800 opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={imageUrl} alt={`Frame ${idx}`} referrerPolicy="no-referrer" className="w-full h-full object-contain" />
+                  <img
+                    src={imageUrl}
+                    alt={`Frame ${idx}`}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (!target.src.includes('/api/image-proxy') && imageUrl.startsWith('http')) {
+                        target.src = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+                      } else {
+                        target.src = '/assets/renders/cyberwarrior.jpg';
+                      }
+                    }}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
               ))}
             </div>

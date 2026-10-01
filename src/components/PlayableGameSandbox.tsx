@@ -52,7 +52,7 @@ export default function PlayableGameSandbox({ imageUrl, assetName }: PlayableGam
     ];
 
     // Collectible Coins
-    let coins = [
+    const coins = [
       { x: 220, y: 155, radius: 8, collected: false },
       { x: 400, y: 95, radius: 8, collected: false },
       { x: 450, y: 95, radius: 8, collected: false }
@@ -65,6 +65,13 @@ export default function PlayableGameSandbox({ imageUrl, assetName }: PlayableGam
     const charImg = new Image();
     charImg.crossOrigin = 'anonymous';
     charImg.src = imageUrl;
+    charImg.onerror = () => {
+      if (!charImg.src.includes('/api/image-proxy') && imageUrl.startsWith('http')) {
+        charImg.src = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+      } else {
+        charImg.src = '/assets/renders/cyberwarrior.jpg';
+      }
+    };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       keys[e.key.toLowerCase()] = true;

@@ -5,9 +5,68 @@ import Link from 'next/link';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SafeImage from '@/components/SafeImage';
 import { GameAsset, Project, AssetType } from '@/types/gameforge';
 import { getStoredAssets, getStoredProjects } from '@/lib/store';
 import { Layers, Search, Filter, Wand2, Grid, List, Tag, Sparkles, ExternalLink, Image as ImageIcon, Heart, SortAsc, CloudUpload } from 'lucide-react';
+
+function SafeAssetThumbnail({ asset }: { asset: GameAsset }) {
+  const category = (
+    asset.assetType.toLowerCase() === 'character' ? 'character' :
+    asset.assetType.toLowerCase().includes('weapon') ? 'weapon' :
+    asset.assetType.toLowerCase() === 'environment' ? 'environment' :
+    asset.assetType.toLowerCase() === 'vehicle' ? 'vehicle' :
+    asset.assetType.toLowerCase().includes('prop') || asset.assetType.toLowerCase().includes('item') ? 'prop' :
+    'default'
+  ) as 'character' | 'weapon' | 'environment' | 'vehicle' | 'prop' | 'default';
+
+  const imageSrc = asset.thumbnailUrl || asset.originalUrl;
+  const fallbacks = [asset.originalUrl, asset.thumbnailUrl].filter(Boolean) as string[];
+
+  return (
+    <div className="relative aspect-square bg-slate-950 overflow-hidden flex items-center justify-center">
+      <SafeImage
+        src={imageSrc}
+        fallbackSrcs={fallbacks}
+        category={category}
+        alt={asset.name}
+        containerClassName="w-full h-full"
+        className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
+      />
+
+      {/* Cloudinary Tags Overlay */}
+      <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-20">
+        <span className="px-2 py-0.5 rounded bg-slate-900/90 text-cyan-400 border border-cyan-500/40 text-[10px] font-bold">
+          {asset.assetType}
+        </span>
+        {asset.isPack && (
+          <span className="px-2 py-0.5 rounded bg-purple-900/90 text-purple-300 border border-purple-500/40 text-[10px] font-bold">
+            Pack
+          </span>
+        )}
+        {asset.cloudinaryUploaded && (
+          <span className="px-2 py-0.5 rounded bg-emerald-900/90 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">
+            ☁ CDN
+          </span>
+        )}
+      </div>
+
+      {asset.isFavorite && (
+        <div className="absolute top-2.5 right-2.5 z-20">
+          <Heart className="w-4 h-4 text-pink-400 fill-pink-400 drop-shadow" />
+        </div>
+      )}
+
+      <div className={`absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded text-[10px] font-mono border z-20 ${
+        asset.cloudinaryUploaded
+          ? 'bg-emerald-950/90 text-emerald-400 border-emerald-800'
+          : 'bg-slate-950/90 text-slate-300 border-slate-800'
+      }`}>
+        {asset.cloudinaryUploaded ? 'f_auto,q_auto ✓' : 'Cloudinary Media'}
+      </div>
+    </div>
+  );
+}
 
 export default function LibraryPage() {
   const [assets, setAssets] = useState<GameAsset[]>([]);
@@ -23,8 +82,11 @@ export default function LibraryPage() {
   const [cloudinaryOnly, setCloudinaryOnly] = useState(false);
 
   useEffect(() => {
-    setAssets(getStoredAssets());
-    setProjects(getStoredProjects());
+    const asts = getStoredAssets();
+    const projs = getStoredProjects();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAssets(asts);
+    setProjects(projs);
   }, []);
 
   const categories = ['all', 'Character', 'Environment', 'Item/Prop', 'UI/Icon', 'Texture'];
@@ -250,43 +312,7 @@ export default function LibraryPage() {
                   href={`/asset/${asset.id}`}
                   className="group bg-slate-900/90 rounded-3xl border border-slate-800 hover:border-cyan-500/60 transition-all overflow-hidden glow-card flex flex-col h-full shadow-lg backdrop-blur-xl"
                 >
-                  <div className="relative aspect-square bg-slate-950 overflow-hidden flex items-center justify-center">
-                    <img
-                      src={asset.thumbnailUrl}
-                      alt={asset.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-
-                    <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1">
-                      <span className="px-2 py-0.5 rounded bg-slate-900/90 text-cyan-400 border border-cyan-500/40 text-[10px] font-bold">
-                        {asset.assetType}
-                      </span>
-                      {asset.isPack && (
-                        <span className="px-2 py-0.5 rounded bg-purple-900/90 text-purple-300 border border-purple-500/40 text-[10px] font-bold">
-                          Pack
-                        </span>
-                      )}
-                      {asset.cloudinaryUploaded && (
-                        <span className="px-2 py-0.5 rounded bg-emerald-900/90 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">
-                          ☁ CDN
-                        </span>
-                      )}
-                    </div>
-
-                    {asset.isFavorite && (
-                      <div className="absolute top-2.5 right-2.5">
-                        <Heart className="w-4 h-4 text-pink-400 fill-pink-400 drop-shadow" />
-                      </div>
-                    )}
-
-                    <div className={`absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded text-[10px] font-mono border ${
-                      asset.cloudinaryUploaded
-                        ? 'bg-emerald-950/90 text-emerald-400 border-emerald-800'
-                        : 'bg-slate-950/90 text-slate-300 border-slate-800'
-                    }`}>
-                      {asset.cloudinaryUploaded ? 'f_auto,q_auto ✓' : 'direct'}
-                    </div>
-                  </div>
+                  <SafeAssetThumbnail asset={asset} />
 
                   <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                     <div>
@@ -294,7 +320,7 @@ export default function LibraryPage() {
                         {asset.name}
                       </h3>
                       <p className="text-xs text-slate-400 line-clamp-2 mt-1 italic">
-                        "{asset.prompt}"
+                        &quot;{asset.prompt}&quot;
                       </p>
                     </div>
 
@@ -325,17 +351,19 @@ export default function LibraryPage() {
                   className="p-4 flex items-center justify-between hover:bg-slate-800/60 transition-colors group gap-4"
                 >
                   <div className="flex items-center gap-4">
-                    <img
-                      src={asset.thumbnailUrl}
+                    <SafeImage
+                      src={asset.thumbnailUrl || asset.originalUrl}
+                      fallbackSrcs={[asset.originalUrl, asset.thumbnailUrl].filter(Boolean) as string[]}
                       alt={asset.name}
-                      className="w-14 h-14 rounded-2xl object-cover border border-slate-800"
+                      containerClassName="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-slate-800"
+                      className="w-full h-full object-cover"
                     />
 
                     <div>
                       <h3 className="font-bold text-white text-sm group-hover:text-cyan-400 transition-colors">
                         {asset.name}
                       </h3>
-                      <p className="text-xs text-slate-400 italic line-clamp-1">"{asset.prompt}"</p>
+                      <p className="text-xs text-slate-400 italic line-clamp-1">&quot;{asset.prompt}&quot;</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] font-bold text-cyan-400">{asset.assetType}</span>
                         <span className="text-[10px] text-slate-500">• {asset.projectName}</span>

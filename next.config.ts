@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ['192.168.137.1:3000', '192.168.137.1', 'localhost:3000'],
   // Exclude character-device files that Turbopack cannot read in this environment.
   // .mcp.json is a char device (not a regular file) in the CI sandbox.
   outputFileTracingExcludes: {

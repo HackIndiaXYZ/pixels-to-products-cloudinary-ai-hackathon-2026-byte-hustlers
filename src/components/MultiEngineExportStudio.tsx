@@ -11,7 +11,7 @@ interface MultiEngineExportStudioProps {
 }
 
 export default function MultiEngineExportStudio({ asset }: MultiEngineExportStudioProps) {
-  const [engineTab, setEngineTab] = useState<'unity' | 'unreal' | 'godot' | 'json'>('unity');
+  const [engineTab, setEngineTab] = useState<'unity' | 'unreal' | 'godot' | 'battle_royale' | 'json'>('battle_royale');
   const [copied, setCopied] = useState(false);
 
   const assetCdnUrl = getOptimizedCloudinaryUrl(asset.originalUrl);
@@ -140,6 +140,49 @@ func _on_asset_downloaded(
         return
     sprite.texture = ImageTexture.create_from_image(image)
     print("[GameForge AI] Loaded: ${asset.name}")`,
+    battle_royale: `// 🪂 GameForge AI — PUBG & Free Fire Battle Royale Engine Mechanics
+// Asset: ${asset.name} | Type: ${asset.assetType} | Style: ${asset.style}
+// Works with Unity C# and Unreal Engine 5 C++
+
+using System.Collections;
+using UnityEngine;
+
+public class BattleRoyaleEngineManager : MonoBehaviour
+{
+    [Header("100-Player Battle Royale Match Stats")]
+    public int totalPlayers = 100;
+    public int alivePlayers = 42;
+    public float safeZoneRadius = 500f;
+    public float shrinkTimerSeconds = 45f;
+
+    [Header("Equipped Weapon & Character Skin Data")]
+    public string assetSkinName = "${asset.name}";
+    public string cdnTextureUrl = "${assetCdnUrl}";
+    public float weaponDamageMultiplier = 2.5f;
+
+    private void Update()
+    {
+        if (shrinkTimerSeconds > 0)
+        {
+            shrinkTimerSeconds -= Time.deltaTime;
+            if (shrinkTimerSeconds <= 0)
+            {
+                ShrinkSafeZone();
+            }
+        }
+    }
+
+    public void ShrinkSafeZone()
+    {
+        safeZoneRadius *= 0.75f;
+        Debug.Log("[PUBG/FreeFire Engine] Safe zone shrinking! New radius: " + safeZoneRadius + "m");
+    }
+
+    public void FireWeapon(Vector3 targetPosition)
+    {
+        Debug.Log("[PUBG/FreeFire Engine] Fired " + assetSkinName + " at " + targetPosition + " dealing " + (100 * weaponDamageMultiplier) + " damage!");
+    }
+}`,
     json: `{
   "asset_id": "${asset.id}",
   "name": "${asset.name}",
@@ -189,7 +232,16 @@ func _on_asset_downloaded(
           <span>Multi-Engine Code & Manifest Exporter</span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => setEngineTab('battle_royale')}
+            className={`px-3 py-1.5 rounded-lg font-black border transition-all ${
+              engineTab === 'battle_royale' ? 'bg-amber-500/25 text-amber-300 border-amber-500/60 shadow-md' : 'bg-slate-900 text-slate-400 border-slate-800'
+            }`}
+          >
+            🪂 PUBG / Free Fire Engine
+          </button>
+
           <button
             onClick={() => setEngineTab('unity')}
             className={`px-3 py-1.5 rounded-lg font-bold border transition-all ${

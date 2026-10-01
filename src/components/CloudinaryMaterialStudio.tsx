@@ -31,6 +31,24 @@ export default function CloudinaryMaterialStudio({ originalImageUrl, assetName }
 
   const currentTransformedUrl = getTransformedUrl();
 
+  const getLiveFilterStyle = () => {
+    const filters: string[] = [];
+    if (hue !== 0) filters.push(`hue-rotate(${hue}deg)`);
+    if (contrast !== 0) filters.push(`contrast(${100 + contrast}%)`);
+
+    if (materialPreset === 'gold') {
+      filters.push('sepia(0.85) saturate(3.5) hue-rotate(5deg) brightness(1.1)');
+    } else if (materialPreset === 'neon') {
+      filters.push('saturate(2.2) contrast(1.3) drop-shadow(0 0 15px #06b6d4)');
+    } else if (materialPreset === 'fire') {
+      filters.push('sepia(0.7) saturate(4.0) hue-rotate(-30deg) brightness(1.15) drop-shadow(0 0 20px #ef4444)');
+    } else if (materialPreset === 'pixel') {
+      filters.push('contrast(1.4) saturate(1.2)');
+    }
+
+    return filters.join(' ');
+  };
+
   const handleCopy = () => {
     navigator.clipboard.writeText(currentTransformedUrl);
     setCopied(true);
@@ -129,15 +147,29 @@ export default function CloudinaryMaterialStudio({ originalImageUrl, assetName }
         </div>
 
         {/* IMAGE PREVIEW */}
-        <div className="md:col-span-7 flex flex-col items-center justify-center p-4 bg-slate-900 rounded-2xl border border-slate-800 min-h-[300px]">
+        <div className="md:col-span-7 flex flex-col items-center justify-center p-4 bg-slate-900 rounded-2xl border border-slate-800 min-h-[300px] relative overflow-hidden">
           <img
             src={currentTransformedUrl}
             alt={assetName}
             referrerPolicy="no-referrer"
-            className="max-h-[280px] object-contain rounded-2xl shadow-2xl"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (target.src !== originalImageUrl) {
+                target.src = originalImageUrl;
+              } else if (!target.src.includes('/api/image-proxy') && originalImageUrl.startsWith('http')) {
+                target.src = `/api/image-proxy?url=${encodeURIComponent(originalImageUrl)}`;
+              } else {
+                target.src = '/assets/renders/cyberwarrior.jpg';
+              }
+            }}
+            style={{
+              filter: getLiveFilterStyle() || undefined,
+              imageRendering: materialPreset === 'pixel' ? 'pixelated' : 'auto'
+            }}
+            className="max-h-[280px] object-contain rounded-2xl shadow-2xl transition-all duration-300"
           />
           <div className="mt-3 px-3 py-1 rounded-full bg-slate-950/80 border border-slate-800 text-[11px] font-mono text-cyan-400">
-            Cloudinary Real-Time Parameters
+            Cloudinary Real-Time Parameters: {materialPreset !== 'none' ? `Preset: ${materialPreset.toUpperCase()}` : `Hue ${hue}°, Contrast ${contrast}%`}
           </div>
         </div>
       </div>

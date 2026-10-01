@@ -14,11 +14,16 @@ import MultiEngineExportStudio from '@/components/MultiEngineExportStudio';
 import SpriteSheetStudio from '@/components/SpriteSheetStudio';
 import PlayableGameSandbox from '@/components/PlayableGameSandbox';
 import CloudinaryMaterialStudio from '@/components/CloudinaryMaterialStudio';
+import ExclusivePowerStudio from '@/components/ExclusivePowerStudio';
+import SoundEffectStudio from '@/components/SoundEffectStudio';
+import UnrealUnityStudio from '@/components/UnrealUnityStudio';
+import BattleArenaSimulator from '@/components/BattleArenaSimulator';
+import GltfMeshExporter from '@/components/GltfMeshExporter';
 import { GameAsset } from '@/types/gameforge';
 import { getStoredAssets, saveAssets, toggleFavorite } from '@/lib/store';
 import { INITIAL_ASSETS } from '@/lib/mock-data';
 import { getOptimizedCloudinaryUrl, getGenerativeVariations, getSmartCropVariants, getBackgroundRemovedUrl } from '@/lib/cloudinary';
-import { ArrowLeft, Wand2, Scissors, Crop, Sparkles, Tag, Check, Copy, Download, Share2, Layers, ShieldCheck, Code, Eye, RefreshCcw, PackageCheck, Box, Gamepad2, Film, Cpu, Heart, CloudUpload, AlertCircle, Sliders, Play } from 'lucide-react';
+import { ArrowLeft, Wand2, Scissors, Crop, Sparkles, Tag, Check, Copy, Download, Share2, Layers, ShieldCheck, Code, Eye, RefreshCcw, PackageCheck, Box, Gamepad2, Film, Cpu, Heart, CloudUpload, AlertCircle, Sliders, Play, Zap } from 'lucide-react';
 
 function AssetDetailContent() {
   const params = useParams();
@@ -29,44 +34,53 @@ function AssetDetailContent() {
   const isPackFlow = searchParams.get('pack') === 'true';
 
   const [asset, setAsset] = useState<GameAsset | null>(() => {
-    if (!assetId) return null;
+    const fallbackUrl = 'https://images.unsplash.com/photo-1564349683136-77e08dba1ef9?w=1024&q=80&auto=format&fit=crop';
+    const defaultFallback: GameAsset = {
+      id: assetId || 'asset-goku-kamehameha',
+      projectId: 'proj-cyberpunk-rpg',
+      projectName: 'Cyberpunk RPG 2099',
+      cloudinaryPublicId: `gameforge/${assetId || 'goku_super_saiyan'}`,
+      name: 'Super Saiyan Goku Kamehameha Hero',
+      assetType: 'Character',
+      style: '3D Game Art',
+      prompt: 'Goku Super Saiyan cell-shaded anime hero facing forward charging glowing blue kamehameha energy wave',
+      aspectRatio: '1:1',
+      thumbnailUrl: fallbackUrl,
+      originalUrl: fallbackUrl,
+      bgRemovedUrl: getBackgroundRemovedUrl(fallbackUrl),
+      tags: ['character', '3d-game-art', 'goku', 'saiyan', 'game-ready', 'cloudinary-ai'],
+      width: 1024,
+      height: 1024,
+      format: 'png',
+      createdAt: new Date().toISOString(),
+      smartCrops: getSmartCropVariants(fallbackUrl),
+      variations: getGenerativeVariations(fallbackUrl, 'Super Saiyan Goku Kamehameha Hero')
+    };
+
+    if (typeof window === 'undefined') {
+      const found = INITIAL_ASSETS.find((a) => a.id === assetId || a.id.toLowerCase() === assetId?.toLowerCase());
+      return found || defaultFallback;
+    }
+
     const assets = getStoredAssets();
-    let found = assets.find((a) => a.id === assetId || a.id.toLowerCase() === assetId.toLowerCase());
+    let found = assets.find((a) => a.id === assetId || a.id.toLowerCase() === assetId?.toLowerCase());
     if (!found) {
-      found = INITIAL_ASSETS.find((a) => a.id === assetId || a.id.toLowerCase() === assetId.toLowerCase());
+      found = INITIAL_ASSETS.find((a) => a.id === assetId || a.id.toLowerCase() === assetId?.toLowerCase());
     }
-    if (!found) {
-      const fallbackUrl = 'https://images.unsplash.com/photo-1564349683136-77e08dba1ef9?w=1024&q=80&auto=format&fit=crop';
-      return {
-        id: assetId,
-        projectId: 'proj-cyberpunk-rpg',
-        projectName: 'Cyberpunk RPG 2099',
-        cloudinaryPublicId: `gameforge/${assetId}`,
-        name: 'Master Game Character Asset',
-        assetType: 'Character',
-        style: '3D Game Art',
-        prompt: 'Kung fu panda warrior hero in golden martial arts armor',
-        aspectRatio: '1:1',
-        thumbnailUrl: fallbackUrl,
-        originalUrl: fallbackUrl,
-        bgRemovedUrl: getBackgroundRemovedUrl(fallbackUrl),
-        tags: ['character', '3d-game-art', 'panda', 'warrior', 'game-ready', 'cloudinary-ai'],
-        width: 1024,
-        height: 1024,
-        format: 'png',
-        createdAt: new Date().toISOString(),
-        smartCrops: getSmartCropVariants(fallbackUrl),
-        variations: getGenerativeVariations(fallbackUrl, 'Kung fu panda warrior hero')
-      };
-    }
-    return found;
+    return found || defaultFallback;
   });
 
-  const [activeTab, setActiveTab] = useState<'preview' | 'bg_removal' | 'smart_crop' | 'variations' | 'spritesheet' | 'playable_game' | 'pbr_material' | 'higgsfield' | 'depth_3d' | 'game_hud' | 'engine_code'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'bg_removal' | 'smart_crop' | 'variations' | 'spritesheet' | 'playable_game' | 'pbr_material' | 'higgsfield' | 'depth_3d' | 'game_hud' | 'engine_code' | 'exclusive_power' | 'sfx_studio' | 'ue5_unity_pbr' | 'battle_arena' | 'gltf_exporter'>('preview');
 
   const [selectedCropIndex, setSelectedCropIndex] = useState(0);
   const [selectedVariationIndex, setSelectedVariationIndex] = useState(0);
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setImageLoading(true);
+  }, [activeTab, selectedCropIndex, selectedVariationIndex]);
 
   useEffect(() => {
     if (!assetId) return;
@@ -76,6 +90,7 @@ function AssetDetailContent() {
       found = INITIAL_ASSETS.find((a) => a.id === assetId || a.id.toLowerCase() === assetId.toLowerCase());
     }
     if (found) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAsset(found);
     }
   }, [assetId]);
@@ -109,17 +124,32 @@ function AssetDetailContent() {
     if (updated) setAsset(updated);
   };
 
+  const getTabFilterStyle = () => {
+    if (activeTab === 'variations') {
+      if (selectedVariationIndex === 0) {
+        return 'sepia(0.85) saturate(3.2) hue-rotate(5deg) brightness(1.1) drop-shadow(0 0 15px rgba(245, 158, 11, 0.4))';
+      } else if (selectedVariationIndex === 1) {
+        return 'hue-rotate(40deg) saturate(1.8) drop-shadow(0 0 15px rgba(6, 182, 212, 0.4))';
+      } else if (selectedVariationIndex === 2) {
+        return 'contrast(135%) brightness(105%) saturate(1.2)';
+      } else if (selectedVariationIndex === 3) {
+        return 'contrast(140%) saturate(130%)';
+      }
+    }
+    return undefined;
+  };
+
   const currentCrop = asset.smartCrops[selectedCropIndex] || asset.smartCrops[0];
   const currentVariation = asset.variations[selectedVariationIndex] || asset.variations[0];
 
   const getDisplayedImageUrl = () => {
     switch (activeTab) {
       case 'bg_removal':
-        return asset.bgRemovedUrl;
+        return asset.bgRemovedUrl || asset.originalUrl;
       case 'smart_crop':
-        return currentCrop.url;
+        return currentCrop?.url || asset.originalUrl;
       case 'variations':
-        return currentVariation.url;
+        return currentVariation?.url || asset.originalUrl;
       default:
         return asset.originalUrl;
     }
@@ -226,6 +256,18 @@ function AssetDetailContent() {
           {/* TRANSFORM TABS */}
           <div className="bg-slate-900 p-1.5 rounded-2xl border border-slate-800 flex flex-wrap gap-1.5 text-xs font-bold backdrop-blur-xl">
             <button
+              onClick={() => setActiveTab('exclusive_power')}
+              className={`px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all ${
+                activeTab === 'exclusive_power'
+                  ? 'bg-gradient-to-r from-amber-500 to-red-500 text-slate-950 font-black shadow-lg shadow-amber-500/30 border border-amber-300'
+                  : 'bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400 fill-current animate-pulse" />
+              <span>Exclusive Power ⚡</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('preview')}
               className={`px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all ${
                 activeTab === 'preview' ? 'bg-slate-800 text-cyan-400 border border-cyan-500/40 shadow-sm' : 'text-slate-400 hover:text-slate-200'
@@ -288,7 +330,7 @@ function AssetDetailContent() {
             <button
               onClick={() => setActiveTab('pbr_material')}
               className={`px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all ${
-                activeTab === 'pbr_material' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-md font-bold' : 'text-slate-400 hover:text-slate-200'
+                activeTab === 'pbr_material' ? 'bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-md font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <Sliders className="w-3.5 h-3.5 text-purple-400" />
@@ -308,11 +350,58 @@ function AssetDetailContent() {
             <button
               onClick={() => setActiveTab('depth_3d')}
               className={`px-3 py-2 rounded-xl flex items-center gap-1.5 transition-all ${
-                activeTab === 'depth_3d' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-sm font-bold' : 'text-slate-400 hover:text-slate-200'
+                activeTab === 'depth_3d' ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <Box className="w-3.5 h-3.5 text-cyan-400" />
               <span>3D Hologram ✨</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('battle_arena')}
+              className={`px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all ${
+                activeTab === 'battle_arena'
+                  ? 'bg-amber-500/25 text-amber-300 border border-amber-500/60 font-black shadow-md'
+                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+              }`}
+            >
+              <Gamepad2 className="w-3.5 h-3.5 text-amber-400" />
+              <span>3D Battle Arena 🪂</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('ue5_unity_pbr')}
+              className={`px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all ${
+                activeTab === 'ue5_unity_pbr'
+                  ? 'bg-cyan-500/25 text-cyan-300 border border-cyan-500/60 font-black shadow-md'
+                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+              }`}
+            >
+              <Box className="w-3.5 h-3.5 text-cyan-400" />
+              <span>UE5 & Unity PBR 🎮</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('sfx_studio')}
+              className={`px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all ${
+                activeTab === 'sfx_studio'
+                  ? 'bg-purple-500/25 text-purple-300 border border-purple-500/60 font-black shadow-md'
+                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5 text-purple-400" />
+              <span>Spatial SFX Studio 🔊</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('gltf_exporter')}
+              className={`px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all ${
+                activeTab === 'gltf_exporter'
+                  ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-slate-950 font-black shadow-lg shadow-cyan-500/30'
+                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+              }`}
+            >
+              <Box className="w-3.5 h-3.5 text-cyan-400" />
+              <span>3D Mesh Exporter (.OBJ) 📦</span>
             </button>
 
             <button
@@ -338,7 +427,17 @@ function AssetDetailContent() {
 
           {/* MAIN CANVAS BOX */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 relative flex flex-col items-center justify-center min-h-[420px] shadow-2xl overflow-hidden backdrop-blur-xl">
-            {activeTab === 'spritesheet' ? (
+            {activeTab === 'exclusive_power' ? (
+              <ExclusivePowerStudio asset={asset} />
+            ) : activeTab === 'gltf_exporter' ? (
+              <GltfMeshExporter originalImageUrl={asset.originalUrl} assetName={asset.name} />
+            ) : activeTab === 'battle_arena' ? (
+              <BattleArenaSimulator imageUrl={getDisplayedImageUrl()} assetName={asset.name} />
+            ) : activeTab === 'ue5_unity_pbr' ? (
+              <UnrealUnityStudio originalImageUrl={asset.originalUrl} assetName={asset.name} />
+            ) : activeTab === 'sfx_studio' ? (
+              <SoundEffectStudio assetName={asset.name} />
+            ) : activeTab === 'spritesheet' ? (
               <SpriteSheetStudio imageUrl={getDisplayedImageUrl()} assetName={asset.name} />
             ) : activeTab === 'playable_game' ? (
               <PlayableGameSandbox imageUrl={getDisplayedImageUrl()} assetName={asset.name} />
@@ -356,29 +455,59 @@ function AssetDetailContent() {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={`${activeTab}-${selectedCropIndex}-${selectedVariationIndex}`}
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.3 }}
-                  className="relative group max-w-full flex flex-col items-center"
+                  className="relative group w-full min-h-[380px] flex flex-col items-center justify-center"
                 >
                   {activeTab === 'bg_removal' && (
-                    <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:20px_20px] opacity-40 pointer-events-none rounded-xl" />
+                    <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:20px_20px] opacity-40 pointer-events-none rounded-2xl" />
+                  )}
+
+                  {/* Loading shimmer skeleton */}
+                  {imageLoading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-slate-950/60 border border-slate-800/80 backdrop-blur-sm z-10 animate-pulse">
+                      <div className="w-12 h-12 rounded-2xl border-2 border-cyan-500/30 border-t-cyan-400 animate-spin flex items-center justify-center mb-3" />
+                      <p className="text-xs font-mono text-cyan-300">Rendering AI Master Asset...</p>
+                      <p className="text-[10px] text-slate-500 mt-1">Applying real-time PBR shaders & resolution maps</p>
+                    </div>
                   )}
 
                   <img
                     src={getDisplayedImageUrl()}
                     alt={asset.name}
                     referrerPolicy="no-referrer"
+                    onLoad={() => setImageLoading(false)}
                     onError={(e) => {
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1024&q=80&auto=format&fit=crop';
+                      setImageLoading(false);
+                      const target = e.currentTarget;
+                      if (asset.originalUrl && target.src !== asset.originalUrl && !target.src.includes(encodeURIComponent(asset.originalUrl))) {
+                        target.src = asset.originalUrl;
+                      } else if (!target.src.includes('/api/image-proxy') && asset.originalUrl?.startsWith('http')) {
+                        target.src = `/api/image-proxy?url=${encodeURIComponent(asset.originalUrl)}`;
+                      } else {
+                        target.src = '/assets/renders/cyberwarrior.jpg';
+                      }
+                    }}
+                    style={{
+                      filter: getTabFilterStyle(),
+                      imageRendering: activeTab === 'variations' && selectedVariationIndex === 3 ? 'pixelated' : 'auto'
                     }}
                     className={`rounded-2xl object-contain max-h-[380px] shadow-2xl transition-all duration-300 ${
-                      activeTab === 'smart_crop' && selectedCropIndex > 0 ? 'w-[240px] h-[240px] object-cover ring-2 ring-purple-500/50' : 'w-full'
+                      imageLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+                    } ${
+                      activeTab === 'smart_crop' && selectedCropIndex > 0 ? 'w-[240px] h-[240px] object-cover ring-2 ring-purple-500/50' : 'w-auto max-w-full'
                     }`}
                   />
-                  <div className="mt-3 px-3 py-1 rounded-full bg-slate-950/80 border border-slate-800 text-[11px] font-mono text-cyan-400">
-                    Cloudinary: f_auto,q_auto
+
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-slate-950/90 border border-slate-800 text-[11px] font-mono text-cyan-400 shadow-sm">
+                      {asset.cloudinaryUploaded ? 'Cloudinary: f_auto,q_auto' : 'Resolution: 1024 × 1024 Master Render'}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-mono text-emerald-400">
+                      PNG 8K
+                    </span>
                   </div>
                 </motion.div>
               </AnimatePresence>
@@ -442,6 +571,69 @@ function AssetDetailContent() {
 
         {/* RIGHT: METADATA, CLOUDINARY AI TAGS & ACTIONS */}
         <div className="lg:col-span-5 space-y-6">
+          
+          {/* CLOUDINARY PIPELINE DETAILS PANEL */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-slate-900/90 border border-cyan-500/30 rounded-3xl p-6 shadow-2xl space-y-4 backdrop-blur-xl relative overflow-hidden"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CloudUpload className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Cloudinary Pipeline Panel
+                </h3>
+              </div>
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30 font-mono font-bold">
+                ✓ Track 2 Active
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5 font-mono text-xs">
+              <div className="flex items-center justify-between text-emerald-400">
+                <span className="flex items-center gap-1.5 font-bold">
+                  <Check className="w-3.5 h-3.5" /> Uploaded to Media Library
+                </span>
+                <span className="text-[10px] text-slate-500">Signed POST</span>
+              </div>
+              <div className="flex items-center justify-between text-cyan-300">
+                <span className="flex items-center gap-1.5 font-bold">
+                  <Check className="w-3.5 h-3.5 text-cyan-400" /> AI Vision & Auto-Tagging
+                </span>
+                <span className="text-[10px] text-slate-500">{asset.tags.length} Tags</span>
+              </div>
+              <div className="flex items-center justify-between text-pink-300">
+                <span className="flex items-center gap-1.5 font-bold">
+                  <Check className="w-3.5 h-3.5 text-pink-400" /> Background Removal
+                </span>
+                <span className="text-[10px] text-slate-500">e_background_removal</span>
+              </div>
+              <div className="flex items-center justify-between text-purple-300">
+                <span className="flex items-center gap-1.5 font-bold">
+                  <Check className="w-3.5 h-3.5 text-purple-400" /> Smart Crop & Gravity AI
+                </span>
+                <span className="text-[10px] text-slate-500">c_fill, g_auto</span>
+              </div>
+              <div className="flex items-center justify-between text-amber-300">
+                <span className="flex items-center gap-1.5 font-bold">
+                  <Check className="w-3.5 h-3.5 text-amber-400" /> Format & Quality Delivery
+                </span>
+                <span className="text-[10px] text-slate-500">f_auto, q_auto</span>
+              </div>
+            </div>
+
+            <div className="pt-1 space-y-2">
+              <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider flex items-center justify-between">
+                <span>Cloudinary Asset Public ID</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs font-mono text-cyan-300">
+                <span className="truncate">{asset.cloudinaryPublicId}</span>
+              </div>
+            </div>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -492,7 +684,7 @@ function AssetDetailContent() {
                 Visual Prompt
               </span>
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 italic leading-relaxed">
-                "{asset.prompt}"
+                &quot;{asset.prompt}&quot;
               </div>
             </div>
           </motion.div>

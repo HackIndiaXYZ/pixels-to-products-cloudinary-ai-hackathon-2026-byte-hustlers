@@ -1,6 +1,8 @@
 import { GameAsset, Project, AssetType, AssetStyle, AspectRatio } from '@/types/gameforge';
 import { INITIAL_PROJECTS, INITIAL_ASSETS } from './mock-data';
-import { generateCloudinaryTags, getSmartCropVariants, getGenerativeVariations, getBackgroundRemovedUrl, getOptimizedCloudinaryUrl } from './cloudinary';
+import { generateCloudinaryTags, getSmartCropVariants, getGenerativeVariations, getBackgroundRemovedUrl } from './cloudinary';
+import { enhanceGamePrompt } from './prompt-enhancer';
+import { getPhotorealistic3DRender } from './render-resolver';
 
 const LOCAL_STORAGE_KEY_ASSETS = 'gameforge_assets_v1';
 const LOCAL_STORAGE_KEY_PROJECTS = 'gameforge_projects_v1';
@@ -9,7 +11,10 @@ export function getStoredProjects(): Project[] {
   if (typeof window === 'undefined') return INITIAL_PROJECTS;
   try {
     const data = localStorage.getItem(LOCAL_STORAGE_KEY_PROJECTS);
-    if (data) return JSON.parse(data);
+    if (data) {
+      const parsed: Project[] = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
   } catch (e) {
     console.error('Failed to load projects from localStorage', e);
   }
@@ -31,9 +36,58 @@ export function getStoredAssets(): GameAsset[] {
     const data = localStorage.getItem(LOCAL_STORAGE_KEY_ASSETS);
     if (data) {
       const parsed: GameAsset[] = JSON.parse(data);
-      const existingIds = new Set(parsed.map(a => a.id));
-      const missingInitial = INITIAL_ASSETS.filter(a => !existingIds.has(a.id));
-      return [...parsed, ...missingInitial];
+      if (Array.isArray(parsed)) {
+        if (parsed.length === 0) {
+          saveAssets(INITIAL_ASSETS);
+          return INITIAL_ASSETS;
+        }
+
+        const initialMap = new Map(INITIAL_ASSETS.map((a) => [a.id, a]));
+
+        // Refresh and heal all assets with photorealistic 3D AAA game renders
+        const refreshed = parsed.map((asset) => {
+          const init = initialMap.get(asset.id);
+          if (init) {
+            return {
+              ...init,
+              isFavorite: asset.isFavorite ?? init.isFavorite,
+              projectId: asset.projectId || init.projectId,
+              projectName: asset.projectName || init.projectName,
+            };
+          }
+
+          // Heal any asset that has SVG render, broken pollinations, or old Unsplash URL
+          const isSvg = (asset.thumbnailUrl && asset.thumbnailUrl.includes('/api/asset-render')) ||
+                        (asset.originalUrl && asset.originalUrl.includes('/api/asset-render'));
+          const isPollinations = (asset.originalUrl && asset.originalUrl.includes('image.pollinations.ai') && !asset.originalUrl.includes('/api/image-proxy'));
+          const isUnsplash = (asset.originalUrl && asset.originalUrl.includes('images.unsplash.com')) ||
+                             (asset.thumbnailUrl && asset.thumbnailUrl.includes('images.unsplash.com'));
+
+          if (isSvg || isPollinations || isUnsplash || !asset.thumbnailUrl) {
+            const realistic3DRender = getPhotorealistic3DRender(
+              `${asset.name} ${asset.prompt || ''}`,
+              asset.assetType
+            );
+            return {
+              ...asset,
+              thumbnailUrl: realistic3DRender,
+              originalUrl: realistic3DRender,
+              bgRemovedUrl: getBackgroundRemovedUrl(realistic3DRender),
+              smartCrops: getSmartCropVariants(realistic3DRender),
+              variations: getGenerativeVariations(realistic3DRender, asset.name),
+            };
+          }
+          return asset;
+        });
+
+        // Add any missing initial assets
+        const existingIds = new Set(refreshed.map((a) => a.id));
+        const missingInitial = INITIAL_ASSETS.filter((a) => !existingIds.has(a.id));
+        const finalAssets = missingInitial.length > 0 ? [...missingInitial, ...refreshed] : refreshed;
+
+        saveAssets(finalAssets);
+        return finalAssets;
+      }
     }
   } catch (e) {
     console.error('Failed to load assets from localStorage', e);
@@ -50,33 +104,6 @@ export function saveAssets(assets: GameAsset[]) {
   }
 }
 
-// Helper pool of high quality AI game art images for prompt-based generation simulation
-const GENERATED_IMAGE_POOL: Record<string, string[]> = {
-  Character: [
-    'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1024&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1563089145-599997674d42?w=1024&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1024&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1024&q=80&auto=format&fit=crop'
-  ],
-  Environment: [
-    'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1024&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1024&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1024&q=80&auto=format&fit=crop'
-  ],
-  'Item/Prop': [
-    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1024&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1563089145-599997674d42?w=1024&q=80&auto=format&fit=crop'
-  ],
-  'UI/Icon': [
-    'https://images.unsplash.com/photo-1514517220017-8ce97a34a7b6?w=1024&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1024&q=80&auto=format&fit=crop'
-  ],
-  Texture: [
-    'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1024&q=80&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1024&q=80&auto=format&fit=crop'
-  ]
-};
-
 export function toggleFavorite(assetId: string): GameAsset | null {
   const assets = getStoredAssets();
   let updatedAsset: GameAsset | null = null;
@@ -91,47 +118,8 @@ export function toggleFavorite(assetId: string): GameAsset | null {
   return updatedAsset;
 }
 
-export function resolvePromptImageUrl(prompt: string, assetType: AssetType, style: AssetStyle): string {
-  const lower = prompt.toLowerCase();
-  
-  if (lower.includes('naruto') || lower.includes('ninja') || lower.includes('shinobi') || lower.includes('rasengan')) {
-    return 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1024&q=80&auto=format&fit=crop';
-  }
-
-  if (lower.includes('iron man') || lower.includes('nanosuit') || lower.includes('avenger') || lower.includes('stark')) {
-    return 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1024&q=80&auto=format&fit=crop';
-  }
-
-  if (lower.includes('panda') || lower.includes('kungfu') || lower.includes('bear')) {
-    const pandas = [
-      'https://images.unsplash.com/photo-1564349683136-77e08dba1ef9?w=1024&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1527118732049-c88155f2107c?w=1024&q=80&auto=format&fit=crop'
-    ];
-    return pandas[Math.floor(Math.random() * pandas.length)];
-  }
-
-  if (lower.includes('dragon') || lower.includes('beast') || lower.includes('monster')) {
-    return 'https://images.unsplash.com/photo-1563089145-599997674d42?w=1024&q=80&auto=format&fit=crop';
-  }
-
-  if (lower.includes('cyberpunk') || lower.includes('warrior') || lower.includes('robot') || lower.includes('mecha') || lower.includes('knight') || lower.includes('armor')) {
-    return 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1024&q=80&auto=format&fit=crop';
-  }
-
-  if (lower.includes('city') || lower.includes('alley') || lower.includes('environment') || lower.includes('scenery') || lower.includes('forest')) {
-    return 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1024&q=80&auto=format&fit=crop';
-  }
-
-  if (lower.includes('weapon') || lower.includes('blaster') || lower.includes('rifle') || lower.includes('gun') || lower.includes('sword')) {
-    return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1024&q=80&auto=format&fit=crop';
-  }
-
-  if (lower.includes('potion') || lower.includes('elixir') || lower.includes('bottle') || lower.includes('icon')) {
-    return 'https://images.unsplash.com/photo-1514517220017-8ce97a34a7b6?w=1024&q=80&auto=format&fit=crop';
-  }
-
-  const pool = GENERATED_IMAGE_POOL[assetType] || GENERATED_IMAGE_POOL.Character;
-  return pool[Math.floor(Math.random() * pool.length)];
+export function resolvePromptImageUrl(prompt: string, assetType: AssetType, style?: AssetStyle): string {
+  return getPhotorealistic3DRender(prompt, assetType);
 }
 
 export function createNewAsset(params: {

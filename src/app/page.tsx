@@ -406,7 +406,7 @@ export default function Home() {
                         className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/20 inline-flex items-center gap-2"
                       >
                         <Wand2 className="w-4 h-4" />
-                        <span>Test "Generate Asset Pack" Engine</span>
+                        <span>Test &quot;Generate Asset Pack&quot; Engine</span>
                       </Link>
                     </motion.div>
                   </div>

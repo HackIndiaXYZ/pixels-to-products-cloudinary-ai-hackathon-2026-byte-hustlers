@@ -1,6 +1,24 @@
-export type AssetType = 'Character' | 'Environment' | 'Item/Prop' | 'UI/Icon' | 'Texture';
+export type AssetType =
+  | 'Character'
+  | 'Weapon'
+  | 'Prop'
+  | 'Environment'
+  | 'Vehicle'
+  | 'Building'
+  | 'Texture'
+  | 'Creature'
+  | 'UI/Icon'
+  | '2D Sprite Sheet'
+  | 'Marketing Art'
+  | 'Audio/SFX'
+  | 'Item/Prop'
+  | 'Weapon Skin';
 
-export type AssetStyle = '3D Game Art' | 'Pixel Art' | 'Vector' | 'Anime' | 'Photorealistic';
+export type CategoryGroup = '2D ART' | '3D ASSET' | 'MEDIA & MARKETING';
+
+export type PipelineStage = 'CREATE' | 'GENERATE' | 'VARIATE' | 'ANALYZE' | 'OPTIMIZE' | 'ORGANIZE' | 'EXPORT' | 'GAME ENGINE';
+
+export type AssetStyle = '3D Game Art' | 'Pixel Art' | 'Vector' | 'Anime' | 'Photorealistic' | 'Unreal Engine 5 PBR' | 'Cyberpunk AAA';
 
 export type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3';
 
@@ -23,6 +41,23 @@ export interface GenerativeVariation {
   label: string;
   description: string;
   url: string;
+}
+
+export interface ExclusivePower {
+  powerName: string;
+  powerType: 'Ultimate' | 'Passive' | 'Elemental' | 'Technological' | 'Divine' | 'Forbidden';
+  powerLevel: number;
+  description: string;
+  manaCost: number;
+  cooldownSeconds: number;
+  damageMultiplier: string;
+  elementAffinity: 'Arc Energy' | 'Inferno Fire' | 'Volcanic Plasma' | 'Dragon Chi' | 'Quantum Void' | 'Vitality Aura' | 'Cyber Blade';
+  passiveBuff: string;
+  particleFXColor: string;
+  soundEffectName: string;
+  unityCodeSnippet: string;
+  unrealCodeSnippet: string;
+  godotCodeSnippet: string;
 }
 
 export interface GameAsset {
@@ -55,6 +90,7 @@ export interface GameAsset {
   cloudinaryUploaded?: boolean;
   /** Generation provider used */
   provider?: 'pollinations+cloudinary' | 'pollinations' | 'user-upload';
+  exclusivePower?: ExclusivePower;
   createdAt: string;
   smartCrops: SmartCropVariant[];
   variations: GenerativeVariation[];
